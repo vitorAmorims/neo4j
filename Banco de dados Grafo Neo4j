@@ -1,0 +1,842 @@
+Banco de dados de Grafos
+
+Considere uma aplicação que contém o perfil de músicos, bandas, álbuns e músicas.
+
+Relacionamento entre artistas
+
+	Suponha agora que seja necessário o cadastro de músicos e bandas para mapear as parcerias formadas.
+
+	Podemos armazenar músicas e músicos que gravam (e compõe) as músicas e encontrar relações entre músicos.  
+	
+	Musicas	composicoes		musicos
+	id(PK)		id_musica(PK)		id(PK)
+	nome		id_musico(PK)		nome
+			data
+			
+			gravacoes
+			id_musica(pk)
+			id_musico(pk)
+			data
+			
+Um músico pode compor várias músicas, e uma música pode ser composta por vários músicos.
+Um músico pode gravar várias músicas, e uma música pode ser gravada por vários músicos
+
+*************************
+Para uma simples consulta, suponha que queiramos retornar os compositores e suas músicas:
+
+SELECT mo.nome as compositor, mu.nome as musica
+FROM composicoes c
+JOIN musicas mu on mu.id = c.id_musica
+JOIN musicos mo on mo.id = c.id_musico
+
+**************************
+Suponha agora que queiramos retornar a quantidade de músicas que um músico gravou do mesmo compositor:
+
+SELECT mo.nome as interprete, com.nome as compositor, COUNT(com.id) as total_musicas
+FROM musicos mo
+JOIN gravacoes g ON mo.id = g.id_musico
+JOIN musicas ma ON ma.id = g.id_musica
+JOIN composicoes c ON ma.id = c.id_musica
+JOIN musicos com ON com.id = c.id_musico
+WHERE com.id <> mo.id
+GROUP BYc om.id, mo.id
+ORDER BY mo.nome, com.nome;
+
+Estes tipos de consultas podem ser utilizados em sistema como e-commerce para descobrir, por exemplo, “Quem comprou este produto também comprou”.
+
+				EM SGBDR, joins podem deixar as consultas muito lentas.
+
+Iremos utilizar outro tipo de banco,
+	o Neo4j, para modelar este problema.
+
+O que é um Grafo?
+
+	O grafo é uma estrutura de dados que contem diversos algoritmos para busca, caminho mais curto, entre outros conceitos.
+	
+	O grafo é uma estrutura de dados composta por um conjunto de vértices e um conjuntos de arestas.
+	
+	As arestas podem ou não serem direcionadas.
+	
+	É possível representar diversas situações do mundo real utilizando a teoria de grafos.
+	
+	Em uma rede social, um grafo pode ser utilizado para modelar o relacionamento entre as pessoas.
+	
+		Em que, cada pessoa será representada por um vértices e haverá uma aresta entre dois vértices se as duas pessoas forem “amigas” na rede.
+		A aresta será direcionada se uma pessoas “segue” a outra
+		
+	************************
+	Banco de dados Neo4j
+	************************
+	
+	O foco é em como os objetos se relacionam.
+
+	Conceitos de nodos(nós) e arestas.
+	
+	Entidades são representados por nodos e relacionamentos são representados por arestas(que podem conter propriedades).
+	
+	Nodo do grafo representando um artista no banco.
+	
+	O relacionamento acima (aresta) representa a informação de que “Jimi Hendrix” gravou a música “All Along the Watch tower” em “16/out/1968”
+	
+	
+	“Jimi Hendrix” --------------------------------> música “All Along the Watch tower”
+	nodo		aresta(gravou em 16/10/1968		nodo
+	
+	A ideia do banco de dados de Grafos é abstrair toda a complexidade de seus algoritmos e prover ferramenta para explorar as suas características.
+	
+	https://neo4j.com/download/community-edition/
+	
+	******
+	Inserindo nós e arestas no grafo
+	
+	Só há dois tipos de dados no Neo4J:
+		o nó (semelhante ao documento no MongoDB)
+		e o relacionamento (aresta).
+	
+	NOTA: Um nós pode ter um tipo e possuir diversos atributos.
+	
+	O primeiro nó que iremos criar será do tipo músico com nome e dataNascimento.
+	
+		Vamos criar um nó que representa o músico Bob Dylan.
+		Execute o seguinte comando na interface:
+		
+					     propriedade1: valor  propriedade2: valor
+			CREATE(dylan:Musico {nome : 'Bob Dylan', data_de_nascimento : '1941-05-24'})
+			       nome da variável: tipo do nó
+			       
+	Agora precisamos criar um nó para uma das músicas do artista para então definirmos um relacionamento.
+	***************************************************
+	Um relacionamento pode possuir tipo e propriedades	
+	***************************************************
+	
+	A direção do relacionamento também é uma característica importante.
+	
+	Antes vamos criar dois nós:
+		um músico
+		CREATE(hendrix:Musico {nome : "Jimi Hendrix"})
+		uma música
+		CREATE(al_along:Musica {nome : "All Along the Watchtower"})
+	********************************************************************	
+	Para ciar um relacionamento precisamos definir um tipo e uma direção.
+	********************************************************************
+		O relacionamento deve ser do tipo “hendrix” gravou “all along”
+		O relacionamento é do tipo gravou e de “hendrix” para “all along”
+		
+	**************************************************************
+	Execute abaixo o comando para criar o relacionamento no banco.
+	**************************************************************
+
+	Observe que primeiro precisamos definir as variáveis.
+	
+	Especifica a estrutura do grafo pesquisado	
+	MATCH (hendrix:Musico{Jimi:"nome Hendrix"}),(al_along:Musica{nome:"All Along the Watch tower"})
+	
+	CREATE(hendrix)-[r:GRAVOU]->(al_along)
+		nó1      Tipo           nó2
+			   do
+			 relacionamento		
+	
+	A linguagem padrão no banco de dados é a Cypher, utilizada para realizar consultas.
+	
+	Usamos a palavra MATCH para definir a estrutura do grafo pesquisado.
+	
+	A palavra RETURN faz parte da consulta e é usada para definir o que a consulta irá retornar.
+	
+	Para listar o nome de todos os artistas no banco de dados, usando cypher.
+		MATCH (m:Musico)
+		RETURN m.nome
+		
+		O MATCH encontra todos os nós do tipo “Musico”. O resultado é atribuído para a variável “m”
+		RETURN projeta o atributo “nome” dos nós de “m”
+		
+		Retorna nós do banco de dados.
+		MATCH (m:Musico)
+		RETURN m
+		
+		Retorna todo o grafo.
+		MATCH (m)
+		RETURN m
+		
+		A linguagem cypher também possui a cláusula WHERE, como em SQL, para aplicar filtros nas consultas.
+		MATCH (m:Musico)
+		WHERE m.nome = 'Bob Dylan'
+		RETURN m
+	 	
+	 	ou
+	 	
+	 	MATCH (m:Musico{ nome : 'Bob Dylan' })
+	 	RETURN m
+	 	
+	 Crie dois relacionamentos entre o artista Bob Dylan e a música “All Along the Watchtower”
+	 	Um do tipo GRAVOU
+	 	e outro do tipo COMPOS
+	 
+	 	Utilize a cláusula MATCH para especificar as variáveis
+	 		MATCH (bob:Musico{ nome: 'Bob Dylan' }),(al_along:Musica{ nome: 'All Along the Watchtower'})
+	 		CREATE (bob)-[r:GRAVOU]->(al_along)
+	 		CREATE (bob)-[s:COMPOS]->(al_along)
+	 		
+	 Podemos executar uma consulta para exibir todos os relacionamentos do banco
+	 	*** Retorna os relacionamentos sem especificar a direção
+		 MATCH (n1)-[]-()
+		 Return n1
+	 
+	 	*** Retorna os relacionamentos especificando a direção.
+	 		Somente os nós com grau de saída.
+	 	MATCH (n1)-[]->()
+	 	Return n1
+	 
+	 Podemos executar uma consulta para exibir todos os relacionamentos do banco
+	 	*** Retorna os relacionamentos especificando a direção. Somente os nós com grau de chegada.
+	 	MATCH (n1)<-[]-()
+	 	Return n1
+	 			{"nome":"All Along the Watchtower"}
+	 			{"nome":"All Along the Watchtower"}
+	 			{"nome":"All Along the Watchtower"}
+	 			
+	 Retorna a quantidade de arestas de chegada no grafo.
+	 	Somente os nós com grau de chegada.
+	 	
+	 	MATCH (n1)<-[]-()
+	 	Return count (n1)
+	 	
+	 Retorna todos os relacionamentos do tipo “Musico” para “Musica”, especificando os tipos do relacionamento
+	 	MATCH (n1:Musico)-[r]-(n2:Musica)
+	 	Return n1, type(r), n2
+	 
+	 Podemos executar uma consulta para exibir todos os relacionamentos do banco
+	 	Retorna todos os relacionamentos do tipo “Musico” GRAVOU “Musica”, filtrando pelo tipo do relacionamento
+	 	MATCH (n1:Musico)-[r:GRAVOU]->(n2:Musica)
+	 	Return n1, type(r), n2
+	 	
+	 Excluir e editar
+	 	
+	 	Para fazer uma atualização em um nó, precisamos incluir a cláusula SET junto com a cláusula MATCH, especificando o que queremos alterar.
+	 	MATCH (hendrix:Musico{ nome : 'Jimi Hendrix' })
+	 	SET hendrix.data_de_nascimento= '1942-11-27'
+	 	RETURN hendrix
+	 	
+	 	Removendo o campo data_de_nascimento para o músico “Jimi Hendrix”.
+	 	MATCH (hendrix:Musico{ nome : 'Jimi Hendrix' })
+	 	SET hendrix.data_de_nascimento= null
+	 	RETURN hendrix
+	 	
+	 Removendo nós
+	 	Excluindo o nó “Jimi Hendrix”.
+	 	MATCH (hendrix:Musico{ nome : 'Jimi Hendrix' })
+	 	DELETE hendrix
+	 	
+	 	1-Primeiro vamos pesquisar todos os tipos de relacionamentos em que ‘Jimi Hendrix’ esteja envolvido.
+		MATCH (hendrix:Musico{ nome : 'Jimi Hendrix' })-[r]-()
+		RETURN hendrix, type(r)
+		
+		2-Agora podemos remover o relacionamento e o nó logo em seguida.
+			Remove o relacionamento
+			MATCH (hendrix:Musico{ nome : 'Jimi Hendrix' })-[r]-()
+			DELETE r
+			
+			Remove o nó
+			MATCH (hendrix:Musico { nome : 'Jimi Hendrix' })
+			DELETE hendrix
+			
+	Para apagar todo o banco, independente de ter ou não relacionamentos,
+		usamos a cláusula OPTIONAL.
+		MATCH (n)
+		OPTIONAL MATCH (n)-[rel]-()
+		DELETE rel, n
+	
+	Importando de Arquivos CSV
+		Lendo de arquivos csv
+		
+		Vamos aprender como fazer a importação dos arquivos para popular o banco automaticamente.
+		
+		Antes, vamos conhecer mais uma cláusula do Cypher, a palavra MERGE.
+		
+		Ao importar os dados de artistas e músicas, em muitos casos teremos nomes repetidos de um ou outro (um artista grava várias músicas e uma música pode ser gravada por vários artistas)
+		
+		((Para evitar a inserção de itens duplicados usaremos o MERGE.))
+		
+		O primeiro MERGE será como um CREATE, ele irá criar o nó “Bob Dylan”. O segundo MERGE, como o nó já existe, ele apenas ignora e não cria um nó duplicado.O mesmo se aplica aos relacionamentos 
+		MERGE(n1:Musico{nome:"Bob Dylan"})
+		MERGE(n2:Musico{nome:"Bob Dylan"})  ele apenas ignora e não cria nó duplicado
+		
+		Baixes os dois arquivos na pasta da aula (composicoes.csv e gravações.csv) e copie e cole na seguinte pasta de seu computador (você precisará criar a pasta)
+		C:\Users\SeuNome\Documents\Neo4j\default.graphdb\import\
+		
+		Vamos utilizar o comando LOAD para carregar o arquivo e vamos apenas imprimir o seu conteúdo (veja o resultado na tela). O LOAD adiciona cada linha do arquivo para a variável “linha”.
+		
+		LOAD CSV WITH HEADERS
+		FROM"file:///composicoes.csv"  //O diretório “file” representa o diretório criado anteriormente
+		AS linha
+		RETURN linha
+		
+		Para efetivamente criar os nós, vamos utilizar o comando MERGE.
+		
+		LOAD CSV WITH HEADERS
+		FROM"file:///composicoes.csv"
+		AS linha
+		MERGE(compositor:Musico{nome:linha.compositor})
+		MERGE(musica:Musica{nome:linha.musica})
+		MERGE(compositor)-[:COMPOS]->(musica)
+		
+		Agora carregamos o arquivo de gravações.
+		
+		LOAD CSV WITH HEADERS
+		FROM"file:///gravacoes.csv"
+		AS linha
+		MERGE(interprete:Musico{nome:linha.interprete})
+		MERGE(musica:Musica{nome:linha.musica})
+		MERGE(interprete)-[:GRAVOU]->(musica)
+		
+		
+		Fazendo algumas consultas 
+		
+			Retorne os músicos que gravaram alguma música:
+			MATCH(i:Musico)-[g:GRAVOU]->(m:Musica)
+			return i, m
+			
+			Retorne os músicos que gravaram (interprete) alguma música e músicos que compôs (compositor) alguma música.
+			MATCH (interprete:Musico)-[gravou:GRAVOU]->(musica:Musica)
+			MATCH (compositor:Musico)-[compos:COMPOS]->(musica:Musica)
+			RETURN interprete, musica, compositor
+			Observe que a mesma variável deve ser usada aqui
+			
+		Importando um banco Relacional
+			Trabalhando com o banco Northwind
+			A Northwind vende produtos em algumas categorias, fornecidas por fornecedores. Vamos carregar as tabelas do catálogo de produtos.
+			
+			Execute o comando abaixo para carregar os produtos do arquivo products.csv
+			LOAD CSV WITH HEADERS FROM "file:///products.csv" AS row
+			CREATE(n:Product)
+			SET n= row,
+			n.unitPrice= toFloat(row.unitPrice),
+			n.unitsInStock= toInteger(row.unitsInStock),
+			n.unitsOnOrder= toInteger(row.unitsOnOrder),
+			n.reorderLevel= toInteger(row.reorderLevel),
+			n.discontinued= (row.discontinued<> "0")
+			
+			Execute o comando abaixo para carregar os produtos do arquivo categories.csv
+			LOAD CSV WITH HEADERS FROM"file:///categories.csv"AS row
+			CREATE (n:Category)
+			SET n= row
+			
+			Execute o comando abaixo para carregar os produtos do arquivo suppliers.csv
+			LOAD CSV WITH HEADERS FROM"file:///suppliers.csv"AS row
+			CREATE (n:Supplier)
+			SET n= row
+			
+			Crie índices para os campos ID de cada tipo de vértices
+			CREATE INDEX ON:Product(productID)
+			CREATE INDEX ON:Category(categoryID)
+			CREATE INDEX ON:Supplier(supplierID)
+			
+			Os products, categoriese suppliers estão relacionados através de uma chave estrangeira no banco relacional. Vamos criar estes relacionamentos no grafo.
+			
+			
+			Criando relacionamentos entre produtos, categoria do tipo “PART_OF”
+			e produtos, suppliers do tipo “SUPPLIES”
+			
+			MATCH (p:Product),(c:Category)
+			WHERE p.categoryID= c.categoryID
+			CREATE (p)-[:PART_OF]->(c)
+			
+			MATCH (p:Product),(s:Supplier)
+			WHERE p.supplierID= s.supplierID
+			CREATE (s)-[:SUPPLIES]->(p)
+		
+		Realizando algumas consultas:
+			
+			Listar as categorias de produtos fornecidas por cada fornecedor.
+			
+			MATCH (s:Supplier)-->(:Product)-->(c:Category)
+			RETURN s.companyName as Company, collect(distinct c.categoryName) as Categories
+			
+		Realizando algumas consultas:
+		
+			Encontrar o fornecedor de cada produto.
+			
+			MATCH (c:Category {categoryName:"Produce"})<--(:Product)<--(s:Supplier)
+			RETURN DISTINCT s.companyName as ProduceSuppliers
+			
+		Para saber mais sobre importação de dados no Neo4j, veja no site dos desenvolvedores (link abaixo)
+		Tutorial: ImportData IntoNeo4j (importação do Northwindcompleto)https://neo4j.com/developer/guide-importing-data-and-etl/
+		
+		No Neo4j é possível importar arquivos diretamente da internet, veja:
+		LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/categories.csv"
+		AS row 
+		CREATE (n:Category)
+		SET n= row
+		
+		Neo4j e Python
+		
+		A biblioteca GraphDatabasedo Python é utilizado para conectar um programa em Python com o Neo4j (banco de dados de grafos).
+		pip install neo4j-driver
+		pip install neo4jrestclient
+		
+		Referências: https://neo4j.com/developer/python/ 
+		http://neo4j-rest-client.readthedocs.io/en/latest/info.html
+		
+		******************************************************************
+		Crie usuário e relacionamento entre eles, conforme o código abaixo:
+		from neo4jrestclient.client import GraphDatabase
+		db= GraphDatabase("http://localhost:7474", username="neo4j", word="P@ssw0rd")
+		
+		Criação do label “Usuario”
+		user= db.labels.create("Usuario")
+		
+		Criação dos nós do label “Usuário”
+		u1 = db.nodes.create(name="Bob")
+		u2 = db.nodes.create(name="Alice")
+		u3 = db.nodes.create(name="Lea")
+		u4 = db.nodes.create(name="Ana")
+		u5 = db.nodes.create(name="Joel")
+		
+		Adiciona os nós criados
+		user.add(u1, u2, u3, u4, u5)
+		
+		As arestas representam os relacionamentos entre os usuários como ocorre em um rede social. 
+		u1.relationships.create("follows", u2)
+		u4.relationships.create("follows", u1)
+		u2.relationships.create("follows", u3)
+		u2.relationships.create("follows", u5)
+		
+		***********************************************************************
+		Programa em Python que retorna todos os usuários que Bob segue na rede
+		from neo4jrestclient.client import GraphDatabase
+		from neo4jrestclient importclient
+		db= GraphDatabase("http://localhost:7474", username="neo4j", password="P@ssw0rd")
+		
+		# Obtendo todos os usuário que Bob segue na rede
+		q = 'MATCH (u1:Usuario)-[r:follows]->(u2:Usuario)
+		WHERE u1.name="Bob"
+		RETURN u1, type(r), u2'
+		
+		results= db.query(q, returns=(client.Node, str, client.Node))
+		
+		for r in results:
+			print("(%s)-[%s]->(%s)"% (r[0]["name"], r[1], r[2]["name"]))
+
+		# saída:# (Bob)-[follows]->(Alice)
+		
+		**********************
+		Quando usar e não usar
+		
+		********************************
+		Situações apropriadas para o uso	
+		********************************
+		Dados conectados: Redes sociais são exemplos clássicos do uso de Grafos. Além de representar amigos, podem também representar relacionamento entre funcionários, clientes, etc.
+		Roteamento, serviços de localização: dois pontos (locais) podem ser conectados a uma determinada distância. Tal informação pode ser útil para recomendar um restaurante mais próximo. Ou qualquer serviço baseado em localização.
+		Sistema de recomendação: Pode ser feita recomendações do tipo “seus amigos também compraram este produto” ou “quais itens são sempre comprados juntos?”
+		
+		**********************
+		Situações para não usar
+		**********************
+		Geralmente quando há muita atualização das entidades. Alterar propriedade em todos os nós pode ser lento dependendo do tamanho do grafo.
+		Problemas que lidam com o grafo inteiro podem ser muito lentos. 
+		https://neo4j.com
+		https://neo4j.com/developer/python/
+		https://www.youtube.com/Neo4j
+		
+Aula a vivo
+
+teoria
+instalação
+interface gráfica
+	neo4j CLI
+	
+	criacao do nó do Tipo Músico
+	CREATE (dylan:Musico {nome: 'Bob Dylan', data_de_nascimento: '1941-05-24'});
+	CREATE(hendrix:Musico{nome: 'Jimi Hendrix'});
+	
+	criacao do nó do Tipo Música
+	CREATE(al_along:Musica{nome: "All Along the Watchtower"});
+	
+	consultar o grafo inteiro
+	MATCH (n)
+	RETURN n LIMIT 25;
+
+	
+	consulta os nós da label Musico
+	MATCH(n:Musico)
+	RETURN n LIMIT 25;
+
+	consulta os nós da label Música
+	MATCH(n:Musica)
+	RETURN n LIMIT 25;
+	
+	criar relacionamento IMPORTANTE direção e tipo
+	hendrix GRAVOU all along
+		NOTA: antes de criar o relacionamento, eu tenho que tazer do banco os nós que estarão envolvidos no relacinamento
+	MATCH(hendrix:Musico{nome: 'Jimi hendrix'}),(al_along:Musica{nome: 'All Along the Watchtower'})
+	CREATE(hendrix)-[r:GRAVOU]->(al_along);
+	
+	para consultar o relacionamento do tipo GRAVOU
+	MATCH p=()-[r:GRAVOU]->()
+	RETURN p LIMIT 25;
+	ou
+	MATCH(hendrix)-[r]->(al_along)
+	RETURN hendrix.nome, r, al_along.nome
+	ORDER BY r;
+	
+	
+	
+	criando relacionamentos
+	MATCH (bob: Musico {nome: 'Bob Dylan'}),(al_along: Musica {nome: 'All Along the Watchtower'})
+	CREATE(bob)-[r:GRAVOU]->(al_along)
+	CREATE(bob)-[s:COMPOS]->(al_along);
+	
+	atualizando nó no grafo
+	MATCH(hendrix:Musico{nome: 'Jimi Hendrix'})
+	SET hendrix.data_de_nascimento = '1942-11-27'
+	RETURN hendrix;
+	
+	excluir este campo no do nó
+	MATCH(hendrix:Musico{nome: 'Jimi Hendrix'})
+	SET hendrix.data_de_nascimento = null
+	RETURN hendrix;
+	
+	verificar os relacionamentos com o nó Jimi Hendrix
+	MATCH (hendrix:Musico{nome: 'Jimi Hendrix'})-[r]-()
+	RETURN hendrix, type(r);
+	
+	excluir todos os relacionamentos que nó Jimi faz parte
+	MATCH (hendrix:Musico{nome: 'Jimi Hendrix'})-[r]-()
+	DELETE r;
+	
+	excluir o nó Jimi Hendrix
+	MATCH(hendrix:Musico{nome: 'Jimi Hendrix'})
+	DELETE hendrix;
+		
+	excluir todos os nós do banco
+	MATCH (n)
+	OPTIONAL MATCH (n)-[rel]-()
+	delete rel,n;
+
+	*********IMPORTAR CSV PARA NEO4J	
+	*********************
+	antes de tudo você deve, importar os arquivos .csv para pasta import do neo4f
+	ex:
+	sudo cp /home/vitor/Downloads/gravacoes.csv /var/lib/neo4j/import
+	sudo cp /home/vitor/Downloads/composicoes.csv /var/lib/neo4j/import
+	*********************
+	
+	2-Imprimir na tela o conteudo de cada linha do respectivo arquivo
+	
+	LOAD CSV WITH Headers
+	FROM "file:///composicoes.csv"
+	AS linha
+	RETURN linha;
+	
+	LOAD CSV WITH Headers
+	FROM "file:///gravacoes.csv"
+	AS linha
+	RETURN linha;
+
+	3-criar script para criar BD há partir do arquivo csv
+	LOAD CSV WITH HEADERS
+	FROM 'file:///composicoes.csv'
+	AS linha
+	MERGE (compositor:Musico {nome: linha.compositor})
+	MERGE (musica:Musica {nome: linha.musica})
+	MERGE (compositor)-[:COMPOS]->(musica);
+	
+	LOAD CSV WITH HEADERS
+	FROM 'file:///gravacoes.csv'
+	AS linha
+	MERGE (interprete:Musico {nome: linha.interprete})
+	MERGE (musica:Musica {nome: linha.musica})
+	MERGE (interprete)-[:GRAVOU]->(musica);
+	
+	consultas
+		musicos que gravaram alguma música
+	MATCH (i:Musico)-[r:GRAVOU]->(m:Musica)
+	RETURN i.nome, m.nome;
+		
+		retorne os musicos que são interpretes de alguma musica
+		musicos que são compositores de alguma musica
+		MATCH(interprete:Musico)-[gravou:GRAVOU]->(musica:Musica)
+		MATCH(compositor:Musico)-[compos:COMPOS]->(musica:Musica)
+		RETURN interprete.nome, musica.nome, compositor.nome;
+		
+		retorne os musicos que são interpretes de alguma musica
+		musicos que são compositores de alguma musica
+		aonde o nome do compositor seja 'Bob Dylan'
+		MATCH(interprete:Musico)-[gravou:GRAVOU]->(musica:Musica)
+		MATCH(compositor:Musico)-[compos:COMPOS]->(musica:Musica)
+		WHERE compositor.nome = 'Bob Dylan'
+		RETURN interprete.nome, musica.nome, compositor.nome;
+		
+	1.2 - Importando Dados de Banco Relacional
+		trabalhando com o BD Northwind da microsoft
+		tabelas:
+			Produtos
+			Categorias
+			Fornecedores
+		1-levar todos os arquivos .csv para pasta import
+		suppliers.csv
+		products.csv
+		orders.csv
+		order-details.csv
+		customers.csv
+		categories.csv
+		
+		2-apagar o banco todo
+		MATCH(n)
+		OPTIONAL MATCH(n)-[rel]-()
+		DELETE rel, n;
+		
+		3-fazer importação do arquivo .csv
+			3.1 vendo a estrutura
+			LOAD CSV WITH Headers
+			FROM "file:///products.csv"
+			AS linha
+			RETURN linha;
+			{reorderLevel: "15", unitsInStock: "32", unitPrice: "13.00", supplierID: "12", productID: "77", discontinued: "0", quantityPerUnit: "12 boxes", categoryID: "2", unitsOnOrder: "0", productName: "Original Frankfurter grüne Soße"}
+			
+			3.2 fazendo a importação
+			LOAD CSV WITH HEADERS FROM "file:///products.csv" AS row
+			CREATE (n:Product)
+			SET n = row,
+			n.unitPrice = toInteger(row.unitPrice),
+			n.unitsInStock = toInteger(row.unitsInStock),
+			n.unitsOnOrder = toInteger(row.unitsOnOrder),
+			n.reorderLevel = toInteger(row.reorderLevel),
+			n.discontinued = (row.discontinued <> "0");
+		
+			
+			vendo estrutura de categories
+			LOAD CSV WITH Headers
+			FROM "file:///categories.csv"
+			AS linha			
+			{description: "Seaweed and fish", categoryName: "Seafood", categoryID: "8", picture: "0x151C2F00020000000D000E0014002100FFFFFFFF4269746D617020496D616765005061696E742E5069637475726500010500000200000007000000504272757368000000000000000000A0290000424D98290000000000005600000028000000AC00000078000000010004000000000000000000880B0000880B0000080000"}
+			RETURN linha;
+			
+			LOAD CSV WITH HEADERS FROM "file:///categories.csv" AS row
+			CREATE (n:Category)
+			SET n = row;
+		
+			vendo estrutura de suppliers "fornecedores"
+			LOAD CSV WITH Headers
+			FROM "file:///suppliers.csv"
+			AS linha
+			RETURN linha;
+			{country: "Canada", supplierID: "29", address: "148 rue Chasseur", city: "Ste-Hyacinthe", contactName: "Chantal Goulet", postalCode: "J2S 7S8", companyName: "Forêts d'érables", homePage: "NULL", contactTitle: "Accounting Manager", phone: "(514) 555-2955", fax: "(514) 555-2921", region: "Québec"}
+			
+			LOAD CSV WITH HEADERS FROM "file:///suppliers.csv" AS row
+			CREATE (n:Supplier)
+			SET n = row;
+			
+		4-criar os indices
+			CREATE INDEX ON:Product(productID);
+			CREATE INDEX ON:Category(categoryID);
+			CREATE INDEX ON:Supplier(supplierID);
+			
+			4.1 se quiser remover os index
+			DROP INDEX ON:Product(productID);
+			DROP INDEX ON:Category(categoryID);
+			DROP INDEX ON:Supplier(supplierID);
+			
+		5-relacionar os dados por meio de arestas
+			MATCH (p:Product), (c:Category)
+			WHERE p.categoryID = c.categoryID
+			CREATE (p)-[:PART_OF]->(c);
+			
+			MATCH (p:Product),(s:Supplier)
+			WHERE p.supplierID = s.supplierID
+			CREATE (s)-[:SUPPLIES]->(p);
+			
+		6- relacionamento criados com sucesso
+		possibilidade de consultas mais eficientes
+		
+		listar as categorias de produtos fornecidos por cada fornecedor
+		MATCH (s:Supplier)-->(:Product)-->(c:Category)
+		RETURN s.companyName as Company, collect(distinct c.categoryName) as Categories;		
+		29 rows available after 117 ms, consumed after another 36 ms
+		
+		encontrar o fornecedor de cada produto
+		MATCH (s:Supplier)-->(p:Product)
+		RETURN s.companyName as Company, collect(distinct p.productName) as Products;
+		29 rows available after 39 ms, consumed after another 12 ms
+
+	Neo4j e Python
+		pip install neo4j-driver
+		pip install neo4jrestclient
+
+from neo4j import GraphDatabase
+import logging
+from neo4j.exceptions import ServiceUnavailable
+
+class App:
+
+    def __init__(self, uri, user, password):
+        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+
+    def close(self):
+        # Don't forget to close the driver connection when you are finished with it
+        self.driver.close()
+
+    def create_friendship(self, person1_name, person2_name):
+        with self.driver.session() as session:
+            # Write transactions allow the driver to handle retries and transient errors
+            result = session.write_transaction(
+                self._create_and_return_friendship, person1_name, person2_name)
+            for row in result:
+                print("Created friendship between: {p1}, {p2}".format(p1=row['p1'], p2=row['p2']))
+
+    @staticmethod
+    def _create_and_return_friendship(tx, person1_name, person2_name):
+        # To learn more about the Cypher syntax, see https://neo4j.com/docs/cypher-manual/current/
+        # The Reference Card is also a good resource for keywords https://neo4j.com/docs/cypher-refcard/current/
+        query = (
+            "CREATE (p1:Usuario { name: $person1_name }) "
+            "CREATE (p2:Usuario { name: $person2_name }) "
+            "CREATE (p1)-[:KNOWS]->(p2) "
+            "RETURN p1, p2"
+        )
+        result = tx.run(query, person1_name=person1_name, person2_name=person2_name)
+        try:
+            return [{"p1": row["p1"]["name"], "p2": row["p2"]["name"]}
+                    for row in result]
+        # Capture any errors along with the query and data for traceability
+        except ServiceUnavailable as exception:
+            logging.error("{query} raised an error: \n {exception}".format(
+                query=query, exception=exception))
+            raise
+
+    def find_person(self, person_name):
+        with self.driver.session() as session:
+            result = session.read_transaction(self._find_and_return_person, person_name)
+            for row in result:
+                print("Found person: {row}".format(row=row))
+
+    @staticmethod
+    def _find_and_return_person(tx, person_name):
+        query = (
+            "MATCH (p:Usuario) "
+            "WHERE p.name = $person_name "
+            "RETURN p.name AS name"
+        )
+        result = tx.run(query, person_name=person_name)
+        return [row["name"] for row in result]
+
+
+if __name__ == "__main__":
+    user = "neo4j"
+    password = "lucas041203"
+    app = App("neo4j://localhost:7687", user, password)
+    app.create_friendship("Vitor", "Lucas")
+    app.find_person("Lucas")
+    app.close()
+    
+
+Projeto Orientado (Banco de Dados NoSQL - Neo4j).pdf
+
+Importação de dadose migraçãode um banco relacional
+
+Apesar dos bancos de dados NoSQLserem mais flexíveis quantoao esquemae não serem baseados em tabelas (como ocorre com o banco de dados relacional), o  banco  de  dados  de Grafos é  uma  excelente  alternativa  quando  se  deseja implementar  relacionamentos  entre as  entidades,  porém  mantendo-se  a flexibilidade quanto ao esquema e a escalabilidade.
+
+Uma funcionalidade muitoútil no Neo4j é a capacidade de importar dados de uma tabela  do  banco  de  dados  relacional. Neste  projeto  iremos  colocar  em prática tal funcionalidade e veremos como podemos importar nossos dados de um banco relacional para dentro do Neo4j. 
+
+Este projeto será dividido em duaspartes:
+
+Parte I - composicoes.csv e gravacoes.csv importação deles  para  dentro  do Neo4j
+
+É extremamente comum para o cientista de dados ter que manipular diversos datasets. A grande maioria destes datasets são disponibilizados no formato .csv. Nesta primeira parte do projeto iremos importar dados de um arquivo CSV para dentro do Neo4j. Utilize os arquivos disponíveis no Canvas composicoes.csv e gravacoes.csv e  faça  a importação deles  para  dentro  do Neo4j, criando  as entidades como nós e os relacionamentos entre eles. Cuidado para não duplicar os nós do grafo(Dica: utilize o comando MERGE ao invés do CREATE).
+
+Músicos que gravaram música
+MATCH (i:Musico)-[r:GRAVOU]->(m:Musica)
+RETURN i.nome, m.nome;
+
+Músico que compos música
+MATCH (c:Musico)-[r:COMPOS]->(m:Musica)
+RETURN c.nome, m.nome;
+
+
+Parte II - As tabelas “Categories”, “Products”e “Suppliers” deverão ser migradaspara o Neo4j,
+
+Na parte dois do projetoiremos importar um banco de dados relacional (que já está no formato .csv)pra dentro do Neo4j. As tabelas “Categories”, “Products”e “Suppliers”deverão ser migradaspara o Neo4j, mantendo os seus respectivosrelacionamentos. Observe queum  produto possuiuma  categoria  e  uma categoria pode estar associada a vários produtos; um produto é fornecido por um fornecedor,eum fornecedor poder fornecer vários produtos. Comopodemos migrar  os  dados paraNeo4j  e,  principalmente,  comopodemos  mapear  estes relacionamentos dentro do banco de dados de grafos?
+
+LOAD CSV WITH Headers
+FROM "file:///products.csv"
+AS linha
+RETURN linha;
+			{reorderLevel: "15", unitsInStock: "32", unitPrice: "13.00", supplierID: "12", productID: "77", discontinued: "0", quantityPerUnit: "12 boxes", categoryID: "2", unitsOnOrder: "0", productName: "Original Frankfurter grüne Soße"}
+
+LOAD CSV WITH Headers
+FROM "file:///suppliers.csv"
+AS linha
+RETURN linha;
+{country: "Canada", supplierID: "29", address: "148 rue Chasseur", city: "Ste-Hyacinthe", contactName: "Chantal Goulet", postalCode: "J2S 7S8", companyName: "Forêts d'érables", homePage: "NULL", contactTitle: "Accounting Manager", phone: "(514) 555-2955", fax: "(514) 555-2921", region: "Québec"}
+
+LOAD CSV WITH Headers
+FROM "file:///categories.csv"
+AS linha
+RETURN linha;
+			{description: "Seaweed and fish", categoryName: "Seafood", categoryID: "8", picture: "0x151C2F00020000000D000E0014002100FFFFFFFF4269746D617020496D616765005061696E742E5069637475726500010500000200000007000000504272757368000000000000000000A0290000424D98290000000000005600000028000000AC00000078000000010004000000000000000000880B0000880B0000080000"}
+			RETURN linha;
+
+LOAD CSV WITH HEADERS FROM "file:///products.csv" AS row
+			CREATE (n:Product)
+			SET n = row,
+			n.unitPrice = toInteger(row.unitPrice),
+			n.unitsInStock = toInteger(row.unitsInStock),
+			n.unitsOnOrder = toInteger(row.unitsOnOrder),
+			n.reorderLevel = toInteger(row.reorderLevel),
+			n.discontinued = (row.discontinued <> "0");
+
+LOAD CSV WITH HEADERS FROM "file:///suppliers.csv" AS row
+			CREATE (n:Supplier)
+			SET n = row;
+
+LOAD CSV WITH HEADERS FROM "file:///categories.csv" AS row
+			CREATE (n:Category)
+			SET n = row;
+
+Criar os index
+CREATE INDEX ON:Product(productID);
+CREATE INDEX ON:Category(categoryID);
+CREATE INDEX ON:Supplier(supplierID);
+
+Criando relacionamentos:
+	entre produtos, categoria do tipo “PART_OF”
+	e produtos, suppliers do tipo “SUPPLIES”
+			
+MATCH (p:Product),(c:Category)
+WHERE p.categoryID= c.categoryID
+CREATE (p)-[:PART_OF]->(c);
+
+MATCH (p:Product),(s:Supplier)
+WHERE p.supplierID= s.supplierID
+CREATE (s)-[:SUPPLIES]->(p);
+
+Após  a migração,a  sua  solução  deve  ser  capaz  de  responder  asseguintes consultas:
+
+(1) Listar as categorias de produtos fornecidas por cada fornecedor;
+
+MATCH (s:Supplier)-->(:Product)-->(c:Category)
+RETURN s.companyName as Company, collect(distinct c.categoryName) as Categories;
+		
+29 rows available after 117 ms, consumed after another 36 ms
+
+(2) encontrar o fornecedor de cada produto.
+
+MATCH (s:Supplier)-->(p:Product)
+RETURN s.companyName as Company, collect(distinct p.productName) as Products;
+
+29 rows available after 39 ms, consumed after another 12 ms
+
+(3) Listar fornecedor, cuja categoria seja Condiments em ordem alfabetica.
+MATCH (s:Supplier)-->(:Product)-->(c:Category)
+WHERE c.categoryName = 'Condiments'
+RETURN s.companyName as Company, collect(distinct c.categoryName) as Categories
+ORDER BY s.companyName;
+
+(4) encontrar o fornecedor de produto Chocolade, e retornar também o preco e a quantidade em estoque.
+MATCH (s:Supplier)-->(p:Product)
+WHERE p.productName = 'Chocolade'
+RETURN s.companyName as Company, p.unitPrice, p.unitsInStock;
+
+Observe que não será necessário extrair as informações do banco relacional para .csv usando linguagem SQL. Os arquivos de cada tabela já estão disponíveis no Canvas. 
+
+
+

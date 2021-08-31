@@ -58,7 +58,7 @@ class App:
 
 if __name__ == "__main__":
     user = "neo4j"
-    password = "lucas041203"
+    password = ""
     app = App("neo4j://localhost:7687", user, password)
     app.create_friendship("Vitor", "Lucas")
     app.find_person("Lucas")

@@ -1,7 +1,7 @@
 import logging
 from neo4j.exceptions import ServiceUnavailable
 from neo4j import GraphDatabase
-db = GraphDatabase.driver("neo4j://localhost:7687", auth=("neo4j", "lucas041203"))
+db = GraphDatabase.driver("neo4j://localhost:7687", auth=("neo4j", ""))
 session = db.session()
 
 # query = """ MATCH (p:Person) RETURN p"""

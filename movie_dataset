@@ -26,21 +26,15 @@ return count(m.title);
 
 2.Quais pessoas estão relacionadas ao filme "Cloud Atlas"...
 
-MATCH (m:Movie)
-WHERE m.title STARTS WITH 'Cloud Atlas'
-RETURN m;
-
 MATCH (p:Person)
-OPTIONAL MATCH (p)-[:ACTED_IN]-(m:Movie)
-OPTIONAL MATCH (p)-[:DIRECTED]-(m:Movie)
+OPTIONAL MATCH (m:Movie)
 WHERE m.title STARTS WITH 'Cloud Atlas'
-RETURN p.name;
-
-//find all people whose name starts with J and who may work for a company.
-MATCH (p:Person)
-WHERE p.name STARTS WITH 'J'
-OPTIONAL MATCH (p)-[:WORKS_FOR]-(other:Company)
-RETURN p.name, other.name
+RETURN p.name, m.title
+ORDER BY p.name;
 
 
-3.(desafio) Mostrar filmes e atores até 3 “saltos" de Kevin Bacon4.(desafio++)Mostrar o caminho mais curto de Kevin Bacon até Meg Ryan (independente do relacionamento)
+3.(desafio) Mostrar filmes e atores até 3 “saltos" de Kevin Bacon
+
+
+
+4.(desafio++)Mostrar o caminho mais curto de Kevin Bacon até Meg Ryan (independente do relacionamento)

@@ -237,13 +237,13 @@ O que é um Grafo?
 			
 			Remove o nó
 			MATCH (hendrix:Musico { nome : 'Jimi Hendrix' })
-			DELETE hendrix
+			DELETE hendrix;
 			
 	Para apagar todo o banco, independente de ter ou não relacionamentos,
 		usamos a cláusula OPTIONAL.
 		MATCH (n)
 		OPTIONAL MATCH (n)-[rel]-()
-		DELETE rel, n
+		DELETE rel, n;
 	
 	Importando de Arquivos CSV
 		Lendo de arquivos csv

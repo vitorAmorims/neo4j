@@ -1,0 +1,46 @@
+Movie Dataset
+
+Utilize o script chamado “movies.txt” fornecido no módulo da disciplina, importe e execute no Neo4jVeja e  analise(quais  são  os  vértices  e  quais  os  relacionamentos)o  grafo  de resultadoExercícios:
+
+1.Encontre os nomes dos filmes lançados nos anos 90...
+MATCH (m:Movie)
+WHERE m.released >= 1990 and m.released <= 2000
+return m.title;
+
+1.1 ordene o resultado em ordem crescente
+MATCH (m:Movie)
+WHERE m.released >= 1990 and m.released <= 2000
+return m.title
+ORDER BY m.title;
+
+1.1 ordene o resultado em ordem decrescente
+MATCH (m:Movie)
+WHERE m.released >= 1990 and m.released <= 2000
+return m.title
+ORDER BY m.title DESC;
+
+1.1 Conte quantos filmes foram lançados em 1992
+MATCH (m:Movie)
+WHERE m.released = 1992
+return count(m.title);
+
+2.Quais pessoas estão relacionadas ao filme "Cloud Atlas"...
+
+MATCH (m:Movie)
+WHERE m.title STARTS WITH 'Cloud Atlas'
+RETURN m;
+
+MATCH (p:Person)
+OPTIONAL MATCH (p)-[:ACTED_IN]-(m:Movie)
+OPTIONAL MATCH (p)-[:DIRECTED]-(m:Movie)
+WHERE m.title STARTS WITH 'Cloud Atlas'
+RETURN p.name;
+
+//find all people whose name starts with J and who may work for a company.
+MATCH (p:Person)
+WHERE p.name STARTS WITH 'J'
+OPTIONAL MATCH (p)-[:WORKS_FOR]-(other:Company)
+RETURN p.name, other.name
+
+
+3.(desafio) Mostrar filmes e atores até 3 “saltos" de Kevin Bacon4.(desafio++)Mostrar o caminho mais curto de Kevin Bacon até Meg Ryan (independente do relacionamento)
